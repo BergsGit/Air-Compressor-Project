@@ -72,3 +72,23 @@ J = 1/2.*mass.*(r_o.^2-r_i.^2);             % Rotational Inertia, [kg/m^2]
 % Calculate F from thermo equations
 % T_load = F*AoA(sin(theta)-tan(phi)cos(theta)); % Loading torque, Nm
 
+
+
+
+%% Final Project Goal, 'Coefficient Fluctuation in Speed' C_f
+% we should already have values of omega at this point
+
+% w_max = max(w);
+% w_min = min(w); 
+% w_avg = mean(w);
+
+C_f = (w_max - w_min) ./ w_avg;
+
+if C_f <= 0.05
+    disp('C_f value is sufficient')
+
+else
+    disp('Warning: C_f value is too large')
+
+end
+
