@@ -2,6 +2,8 @@ clear;
 close all;
 clc;
 
+% testing
+
 %% Position of a Slider-Crank
 
 AoA = 0.0508;                  % Crank length, [m]
