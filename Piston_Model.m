@@ -4,13 +4,16 @@ clc;
 
 %% Position of a Slider-Crank
 
-AoA = 0.0508;           % Crank length, [m]
-AB = 0.1524;            % Connecting rod length, [m]
+AoA = 0.0508;                  % Crank length, [m]
+AB = 0.1524;                   % Connecting rod length, [m]
 
-cyl_dia = 0.0635;       % Cylinder diameter, [m]
-h_clear = 0.0222758;    % Head Clearance, [m]
-p_out = 344738;         % Outlet Pressure, [Pa] gage
-comp_speed = 84;        % Compressor Speed, [rad/s]
+cyl_dia = 0.0635;              % Cylinder diameter, [m]
+cyl_area = (pi/4).*(cyl_dia.^2);    % Cylinder area, [m^2]
+h_clear = 0.0222758;           % Head Clearance, [m]
+p_atm = 101325;                % Inlet/Atmospheric Pressure [Pa] absolute
+p_out_g = 344738;              % Outlet Pressure, [Pa] gage
+p_out_a = p_out_g + p_atm;     % Outlet Pressure, [Pa] absolute
+comp_speed = 84;               % Compressor Speed, [rad/s]
 
 theta=linspace(0,4*pi,1000);       % Crank Angle, [rad]
 phi = asin(AoA.*sin(theta)./AB);   % Rod Angle, [rad]
@@ -73,7 +76,18 @@ J = 1/2.*mass.*(r_o.^2-r_i.^2);             % Rotational Inertia, [kg/m^2]
 % T_load = F*AoA(sin(theta)-tan(phi)cos(theta)); % Loading torque, Nm
 
 
+%% Thermo analysis, determine pressure as a function of volume
+% volume is a function of height which is a function of theta
+% Pv^n = const
+n = 1.3;
+vol_h = y_max + h_clear - y_B;              % Height of air's volume in the cylinder [m]
+vol_tot = cyl_area .* vol_h;                % Total volume in the cylinder [m^3]
+Pvn_total = p_atm .* (vol_tot).^n;          % Total value of Pv^n, this value is constant
 
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %% Final Project Goal, 'Coefficient Fluctuation in Speed' C_f
 % we should already have values of omega at this point
