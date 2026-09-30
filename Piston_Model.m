@@ -87,6 +87,13 @@ Pvn_total = p_atm .* (vol_max).^n;          % Total value of Pv^n, this value is
 
 P_abs = Pvn_total ./ (vol_tot .^ n);        % Pressure at the input theta value [Pa] absolute
 
+% % The following is test code, double check validity (hardcoding pressure cap at outlet pressure)
+%for ii = theta
+%   if P_abs(ii) > p_out_a
+%       P_abs(ii) = p_out_a
+%   end
+%end
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
