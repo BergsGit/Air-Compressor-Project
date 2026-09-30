@@ -82,9 +82,10 @@ J = 1/2.*mass.*(r_o.^2-r_i.^2);             % Rotational Inertia, [kg/m^2]
 n = 1.3;
 vol_h = y_max + h_clear - y_B;              % Height of air's volume in the cylinder [m]
 vol_tot = cyl_area .* vol_h;                % Total volume in the cylinder [m^3]
-Pvn_total = p_atm .* (vol_tot).^n;          % Total value of Pv^n, this value is constant
+vol_max = max(vol_tot);                     % Cylinder volume at BDC [m^3]
+Pvn_total = p_atm .* (vol_max).^n;          % Total value of Pv^n, this value is constant
 
-
+P_abs = Pvn_total ./ (vol_tot .^ n);        % Pressure at the input theta value [Pa] absolute
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
