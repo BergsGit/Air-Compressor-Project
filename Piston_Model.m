@@ -60,7 +60,7 @@ fprintf("Top Dead Center = %0.2f m\nBottom Dead Center = %0.2f m\n",TDC,BDC)
 
 %% Thermo analysis, determine pressure as a function of volume
 % volume is a function of height which is a function of theta
-% Pv^n = const, Polytropic expansion and compression, 1->2 and 3
+% Pv^n = const, Polytropic expansion and compression, 1->2 and 3->4
 n = 1.3;
 vol_height = y_max + h_clear - y_B;         % Height of air's volume in the cylinder [m]
 vol_total = cyl_area .* vol_height;         % Total volume in the cylinder [m^3]
@@ -139,7 +139,7 @@ idx_2pi = find(theta <= 2*pi, 1, 'last');
 
 % Calculate average torque over one full crank rotation (0 to 2pi)
 T_avg = (1 / (2*pi)) * trapz(theta(1:idx_2pi), T_load_theta(1:idx_2pi));
-fprintf('Average Torque is %0.3f nm\n', T_avg);
+fprintf('Average Torque is %0.3f Nm\n', T_avg);
 
 % dKE = integral(T-load-T_avg, theta_0, theta_f);
 
