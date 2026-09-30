@@ -32,10 +32,11 @@ title("Height of Piston vs Angle of Crank")
 xlabel("\theta (rad)");
 ylabel("y position (m)");
 xlim([0,max(theta)]);
+ylim([min(y_B)*0.9,max(y_B)*1.1]);
 xticks(0:pi/2:max(theta))
 xticklabels(["0","\pi/2","\pi","3/2\pi","2\pi","5/2\pi","3\pi", ...
     "7/2\pi", "4\pi"])
-yline((y_max+y_min)/2,Label="Centerline");
+yline((y_max+y_min)/2,'linestyle','--',Label="Centerline");
 hold off;
 
 %% Plot phi vs height of piston
@@ -45,93 +46,96 @@ title("Height of Piston vs Angle of Rod")
 xlabel("\phi (rad)");
 ylabel("y position (m)");
 xlim([min(phi)*1.1,max(phi)*1.1]);
+ylim([min(y_B)*0.9,max(y_B)*1.1]);
 xticks(0:pi/2:max(phi))
 xticklabels(["0","\pi/2","\pi","3/2\pi","2\pi","5/2\pi","3\pi", ...
     "7/2\pi", "4\pi"])
 
 % Calculate top dead center and bottom dead center
-TDC = h_clear;                  % Top Dead Center
-BDC = h_clear + (y_max-y_min);  % Bottom Dead Center
+TDC = y_max;          % Top Dead Center
+BDC = y_min;  % Bottom Dead Center
 
 %% Print results of max and min piston position
 fprintf("Piston height range from [%0.3f m,%0.3f m], or " + ...
     "[%0.1f in, %0.1f in]\n",y_min,y_max, y_min*39.3701, y_max*39.3701)
-fprintf("Top Dead Center = %0.2f m\nBottom Dead Center = %0.2f m\n",TDC,BDC)
+fprintf("Top Dead Center = %0.2f m\nBottom Dead Center = %0.2f m\n\n" + ...
+    "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n\n",TDC,BDC)
 
 %% Thermo analysis, determine pressure as a function of volume
 % volume is a function of height which is a function of theta
 % Pv^n = const, Polytropic expansion and compression, 1->2 and 3->4
-n = 1.3;
+n = 1.3;                                    % Given polytropic constant
 vol_height = y_max + h_clear - y_B;         % Height of air's volume in the cylinder [m]
-vol_total = cyl_area .* vol_height;         % Total volume in the cylinder [m^3]
-vol_BDC = max(vol_total);                   % Cylinder volume at BDC [m^3]
-vol_TDC = min(vol_total);                   % Cylinder volume at TDC [m^3]
-vol_theta = vol_height * cyl_area;          % Volume in cylinder as a fucntion of theta
+vol_theta = cyl_area .* vol_height;         % Volume in cylinder as a function of theta [m^3]
+vol_BDC = max(vol_theta);                   % Cylinder volume at BDC [m^3]
+vol_TDC = min(vol_theta);                   % Cylinder volume at TDC [m^3]
 Pvn_constant_compression = p_atm .* (vol_BDC).^n;% constant compression value of Pv^n
-Pvn_constant_expansion = p_out_a .* (vol_TDC).^n;% constant expansion value of Pv^n
+Pvn_constant_expansion = p_out_a .* (vol_TDC).^n;% constant expansion value of Pv^n 
 
 P_theta = zeros(size(theta)); %empty matrix to fill with pressure values
 
 %% loop calculating Pressure and volume as a function of theta for entire thermo process
 for ii = 1:length(theta)
-    th = theta(ii); %current crank angle
+    th = theta(ii); %current crank angle [rad]
+    y_B = AB*cos(asin(AoA*sin(th)/AB)) - AoA*cos(th);   % Current piston height from gnd [m]
+    vol_height_th = y_max + h_clear - y_B; 
+    vol_th = cyl_area .* vol_height_th;  
 
-   if (th >= 0 && th <= 2.39) %polytropic compression
-      y_B = AB*cos(asin(AoA*sin(th)/AB)) - AoA*cos(th); 
-      vol_height = y_max + h_clear - y_B; 
-      vol_total = cyl_area .* vol_height;  
-      P_theta(ii) = Pvn_constant_compression ./ (vol_total .^ n); 
-   elseif (th > 2.39 && th <= pi) %constant pressure discharge
-        P_theta(ii) = p_out_a;
+   if (th >= 0 && th <= 2.39) %polytropic compression until P = 50PSI
+      P_theta(ii) = Pvn_constant_compression ./ (vol_th .^ n); 
+
+   elseif (th > 2.39 && th <= pi) %constant pressure discharge after P = 50 PSI
+      P_theta(ii) = p_out_a;
+
    elseif (th > pi && th <= 4.48) %polytropic expansion
-      y_B = AB*cos(asin(AoA*sin(th)/AB)) - AoA*cos(th);
-      vol_height = y_max + h_clear - y_B; 
-      vol_total = cyl_area .* vol_height;  
-      P_theta(ii) = Pvn_constant_expansion ./ (vol_total .^ n); 
+      P_theta(ii) = Pvn_constant_expansion ./ (vol_th .^ n); 
+
    elseif (th > 4.48 && th <= 2*pi) %constant pressure intanke
-       P_theta(ii) = p_atm;
+      P_theta(ii) = p_atm;
+
    elseif (th >= 2*pi && th <= 2.39 + 2*pi) %polytropic compression
-      y_B = AB*cos(asin(AoA*sin(th)/AB)) - AoA*cos(th);
-      vol_height = y_max + h_clear - y_B; 
-      vol_total = cyl_area .* vol_height;  
-      P_theta(ii) = Pvn_constant_compression ./ (vol_total .^ n);
+      P_theta(ii) = Pvn_constant_compression ./ (vol_th .^ n);
+
    elseif (th > 2.39 + 2*pi && th <= 3*pi) %constant pressure discharge
-        P_theta(ii) = p_out_a;
+      P_theta(ii) = p_out_a;
+
    elseif (th > 3*pi && th <= 4.48 + 2*pi) %polytropic expansion
-      y_B = AB*cos(asin(AoA*sin(th)/AB)) - AoA*cos(th);
-      vol_height = y_max + h_clear - y_B; 
-      vol_total = cyl_area .* vol_height;  
-      P_theta(ii) = Pvn_constant_expansion ./ (vol_total .^ n); 
+      P_theta(ii) = Pvn_constant_expansion ./ (vol_th .^ n); 
+
    else %constant pressure intake
-       P_theta(ii) = p_atm;
+      P_theta(ii) = p_atm;
+
    end
 end
 
 %% Plot of Pressure as a function of Theta
 figure;
 subplot(1,2,1)
-plot(theta, P_theta)
-title("Pressure in cylinder vs Angle of Crank")
+plot(theta, P_theta,'linewidth',1)
+title({'Pressure in Cylinder vs Angle of Crank';''})
 xlabel("\theta (rad)");
 ylabel("Pressure (Pa)");
 xlim([0,max(theta)]);
+ylim([50000,500000]);
 xticks(0:pi/2:max(theta))
 xticklabels(["0","\pi/2","\pi","3/2\pi","2\pi","5/2\pi","3\pi", ...
     "7/2\pi", "4\pi"])
 
 %% Plot Pressure vs Volume
 subplot(1,2,2)
-plot(vol_theta, P_theta)
-title("Pressure in Cylinder vs Volume")
+plot(vol_theta, P_theta,'linewidth',1)
+title({'Pressure in Cylinder vs Volume';''})
 xlabel("Volume (m^3)");
 ylabel("Pressure (Pa)");
 xlim([0.00005 0.0004]);
+ylim([50000,500000]);
 
 
 %% Calculate loading torque
 % Calculate F from thermo equations
-F_theta = P_theta*cyl_area; %Force on piston face
-T_load_theta = F_theta.*AoA.*(sin(theta)-(tan(phi).*cos(theta))); % Loading torque, Nm, f(theta)
+F_theta = P_theta.*cyl_area; % Force on piston face at each angle theta [N]
+T_load_theta = F_theta.*AoA.*(sin(theta)-(tan(phi).*cos(theta))); % Loading torque, [Nm], f(theta)
+
 
 
 % Find the values corresponding to theta = 0 and theta = 2pi
@@ -140,6 +144,17 @@ idx_2pi = find(theta <= 2*pi, 1, 'last');
 % Calculate average torque over one full crank rotation (0 to 2pi)
 T_avg = (1 / (2*pi)) * trapz(theta(1:idx_2pi), T_load_theta(1:idx_2pi));
 fprintf('Average Torque is %0.3f Nm\n', T_avg);
+
+figure()
+plot(theta,T_load_theta,'linewidth',1)
+title("Torque vs. Theta")
+xlabel('\theta (rad)')
+ylabel('Torque (Nm)')
+yline(T_avg,'label','Average Torque','linestyle','--')
+xlim([0,4*pi])
+
+
+grid on;
 
 % dKE = integral(T-load-T_avg, theta_0, theta_f);
 
@@ -156,6 +171,9 @@ r_o = D_o./2;                               % Outer Radius, [m]
 r_i = D_i./2;                               % Inner Radius, [m]
 mass = rho.*pi.*t_t.*(r_o.^2-r_i.^2);       % mass, [kg]
 J = 1/2.*mass.*(r_o.^2-r_i.^2);             % Rotational Inertia, [kg/m^2]
+
+%% Find Change in Kinetic Energy
+delta_KE = trapz(theta(1:idx_2pi),T_load_theta(1:idx_2pi)-T_avg) %Change in KE [J]
 
 
 %% Final Project Goal, 'Coefficient Fluctuation in Speed' C_f
@@ -178,4 +196,3 @@ J = 1/2.*mass.*(r_o.^2-r_i.^2);             % Rotational Inertia, [kg/m^2]
 %% Calculate flywheel inertia
 %Use both inertia equations to relate to flywheel specifications
 %J = (dKE / )
-
