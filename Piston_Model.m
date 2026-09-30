@@ -75,6 +75,9 @@ J = 1/2.*mass.*(r_o.^2-r_i.^2);             % Rotational Inertia, [kg/m^2]
 % Calculate F from thermo equations
 % T_load = F*AoA(sin(theta)-tan(phi)cos(theta)); % Loading torque, Nm
 
+%Need to make an array of values to iterate thru for theta_0 and theta_f??
+% T_avg = (1/2pi) * integral(T_load, 0, 2pi);
+% dKE = integral(T-load-T_avg, theta_0, theta_f);
 
 %% Thermo analysis, determine pressure as a function of volume
 % volume is a function of height which is a function of theta
@@ -114,3 +117,6 @@ else
 
 end
 
+%% Calculate flywheel inertia
+%Use both inertia equations to relate to flywheel specifications
+J = (dKE / )
