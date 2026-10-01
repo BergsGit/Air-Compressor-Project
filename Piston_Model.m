@@ -141,8 +141,6 @@ grid on;
 F_theta = P_theta.*cyl_area; % Force on piston face at each angle theta [N]
 T_load_theta = F_theta.*AoA.*(sin(theta)-(tan(phi).*cos(theta))); % Loading torque, [Nm], f(theta)
 
-
-
 % Find the values corresponding to theta = 0 and theta = 2pi
 idx_2pi = find(theta <= 2*pi, 1, 'last');
 
@@ -159,7 +157,6 @@ yline(T_avg,'label','Average Torque','linestyle','--')
 xlim([0,max(theta)])
 grid on;
 
-% dKE = integral(T-load-T_avg, theta_0, theta_f);
 
 %% Calculate where T_load_theta intersects with T_avg
 % Difference vector
@@ -174,7 +171,7 @@ for k = 1:length(cross_idx)
     theta_intersects(k) = theta(cross_idx(k));
 end
 
-% Display intersection points in radians and degrees
+% Display intersection points
 fprintf('Angle Theta at Intersection:\n%0.4f rad & %0.4f rad\n\n',theta_intersects);
 
 % Find array indices corresponding to two bounding intersection angles
@@ -185,8 +182,23 @@ Theta_2 = cross_idx(2);
 dKE = trapz(theta(Theta_1:Theta_2), T_load_theta(Theta_1:Theta_2) - T_avg);
 fprintf('Maximum Change in Kinetic Energy = %0.3f J\n', dKE);
 
+% Guess cf to find good estimate for J
+cf_guess = 0.05;
+w_avg = 800;
+J_guess = dKE./(cf_guess.*w_avg.^2);
+
+% Range J around estimate and find resulting ranged cf
+J_range = linspace(0,J_guess*2,10000);
+cf = dKE./(w_avg.^2.*J_range);
+
+% Find where cf is minimized and print minimum cf
+[min_cf, idx] = min(abs(cf));
+fprintf('The minimum cf is %0.4f\n',min_cf)
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 %% Flywheel
+%{
 rho = 7200;             % material density, [kg/m^3]
 b = 0.0254;             % axial thickness, [m]
 t_t = 0.0381;           % Radial Thickness, [m]
@@ -198,10 +210,7 @@ r_o = D_o./2;                               % Outer Radius, [m]
 r_i = D_i./2;                               % Inner Radius, [m]
 mass = rho.*pi.*t_t.*(r_o.^2-r_i.^2);       % mass, [kg]
 J = 1/2.*mass.*(r_o.^2-r_i.^2);             % Rotational Inertia, [kg/m^2]
-
-%% Find Change in Kinetic Energy
-%delta_KE = trapz(theta(1:idx_2pi),T_load_theta(1:idx_2pi)-T_avg) %Change in KE [J]
-
+%}
 
 %% Final Project Goal, 'Coefficient Fluctuation in Speed' C_f
 % we should already have values of omega at this point
@@ -223,3 +232,4 @@ J = 1/2.*mass.*(r_o.^2-r_i.^2);             % Rotational Inertia, [kg/m^2]
 %% Calculate flywheel inertia
 %Use both inertia equations to relate to flywheel specifications
 %J = (dKE / )
+
