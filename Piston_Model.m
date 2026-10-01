@@ -184,25 +184,26 @@ fprintf('Maximum Change in Kinetic Energy = %0.3f J\n', dKE);
 
 % Guess cf to find good estimate for J
 cf_guess = 0.05;
-w_avg = 800;
-J_guess = dKE./(cf_guess.*w_avg.^2);
+J_guess = dKE./(cf_guess.*comp_speed.^2);
 
 % Range J around estimate and find resulting ranged cf
 J_range = linspace(0,J_guess*2,10000);
-cf = dKE./(w_avg.^2.*J_range);
+cf = dKE./(comp_speed.^2.*J_range);
 
-% Find where cf is minimized and print minimum cf
+% Find where cf is minimized and print minimum cf anf resulting J
 [min_cf, idx] = min(abs(cf));
-fprintf('The minimum cf is %0.4f\n',min_cf)
+J_min = J_range(idx);
+fprintf('The minimum cf is %0.4f at J = %0.4f kg*m^2\n', min_cf, J_min)
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
+% Find resulting radius and diameter from J
 %% Flywheel
-%{
 rho = 7200;             % material density, [kg/m^3]
 b = 0.0254;             % axial thickness, [m]
 t_t = 0.0381;           % Radial Thickness, [m]
-
+ro4_ri4 = (2*J_min) / (rho*pi*b);  %J=(m/2)(ro^4-ri^4), find (ro^4-ri^4) to find ideal diameter
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%
+%(b*Do^3)/2+((b^2)*Do^2)/2+b^4=ro4_ri4;
 % Calculate Unknowns
 D_o = linspace(0.1,0.25);                   % Outer Diameter, [m]
 D_i = D_o - 2*t_t;                          % Inner Diameter, [m]
@@ -211,6 +212,7 @@ r_i = D_i./2;                               % Inner Radius, [m]
 mass = rho.*pi.*t_t.*(r_o.^2-r_i.^2);       % mass, [kg]
 J = 1/2.*mass.*(r_o.^2-r_i.^2);             % Rotational Inertia, [kg/m^2]
 %}
+
 
 %% Final Project Goal, 'Coefficient Fluctuation in Speed' C_f
 % we should already have values of omega at this point
@@ -232,4 +234,3 @@ J = 1/2.*mass.*(r_o.^2-r_i.^2);             % Rotational Inertia, [kg/m^2]
 %% Calculate flywheel inertia
 %Use both inertia equations to relate to flywheel specifications
 %J = (dKE / )
-
