@@ -15,7 +15,7 @@ p_out_g = 344738;              % Outlet Pressure, [Pa] gage, 50 [PSI]
 p_out_a = p_out_g + p_atm;     % Outlet Pressure, [Pa] absolute
 comp_speed = 84;               % Compressor Speed, [rad/s]
 
-theta=linspace(0,4*pi,1000);       % Crank Angle, [rad]
+theta=linspace(0,2*pi,10000);       % Crank Angle, [rad]
 phi = asin(AoA.*sin(theta)./AB);   % Rod Angle, [rad]
 
 % Calculate theta to height correlation
@@ -37,6 +37,7 @@ xticks(0:pi/2:max(theta))
 xticklabels(["0","\pi/2","\pi","3/2\pi","2\pi","5/2\pi","3\pi", ...
     "7/2\pi", "4\pi"])
 yline((y_max+y_min)/2,'linestyle','--',Label="Centerline");
+grid on;
 hold off;
 
 %% Plot phi vs height of piston
@@ -50,6 +51,8 @@ ylim([min(y_B)*0.9,max(y_B)*1.1]);
 xticks(0:pi/2:max(phi))
 xticklabels(["0","\pi/2","\pi","3/2\pi","2\pi","5/2\pi","3\pi", ...
     "7/2\pi", "4\pi"])
+grid on;
+
 
 % Calculate top dead center and bottom dead center
 TDC = y_max;          % Top Dead Center
@@ -120,6 +123,7 @@ ylim([50000,500000]);
 xticks(0:pi/2:max(theta))
 xticklabels(["0","\pi/2","\pi","3/2\pi","2\pi","5/2\pi","3\pi", ...
     "7/2\pi", "4\pi"])
+grid on;
 
 %% Plot Pressure vs Volume
 subplot(1,2,2)
@@ -129,6 +133,7 @@ xlabel("Volume (m^3)");
 ylabel("Pressure (Pa)");
 xlim([0.00005 0.0004]);
 ylim([50000,500000]);
+grid on;
 
 
 %% Calculate loading torque
@@ -151,12 +156,34 @@ title("Torque vs. Theta")
 xlabel('\theta (rad)')
 ylabel('Torque (Nm)')
 yline(T_avg,'label','Average Torque','linestyle','--')
-xlim([0,4*pi])
-
-
+xlim([0,max(theta)])
 grid on;
 
 % dKE = integral(T-load-T_avg, theta_0, theta_f);
+
+%% Calculate where T_load_theta intersects with T_avg
+% Difference vector
+T_diff = T_load_theta - T_avg;
+
+% Find where the sign changes (zeros)
+cross_idx = find(T_diff(1:end-1) .* T_diff(2:end) <= 0);
+
+% Use index to find what theta it intersects at
+theta_intersects = zeros(size(cross_idx));
+for k = 1:length(cross_idx)
+    theta_intersects(k) = theta(cross_idx(k));
+end
+
+% Display intersection points in radians and degrees
+fprintf('Angle Theta at Intersection:\n%0.4f rad & %0.4f rad\n\n',theta_intersects);
+
+% Find array indices corresponding to two bounding intersection angles
+Theta_1 = cross_idx(1);
+Theta_2 = cross_idx(2);
+
+% Integrate delta torque to find peak kinetic energy fluctuation [J]
+dKE = trapz(theta(Theta_1:Theta_2), T_load_theta(Theta_1:Theta_2) - T_avg);
+fprintf('Maximum Change in Kinetic Energy = %0.3f J\n', dKE);
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Flywheel
@@ -173,7 +200,7 @@ mass = rho.*pi.*t_t.*(r_o.^2-r_i.^2);       % mass, [kg]
 J = 1/2.*mass.*(r_o.^2-r_i.^2);             % Rotational Inertia, [kg/m^2]
 
 %% Find Change in Kinetic Energy
-delta_KE = trapz(theta(1:idx_2pi),T_load_theta(1:idx_2pi)-T_avg) %Change in KE [J]
+%delta_KE = trapz(theta(1:idx_2pi),T_load_theta(1:idx_2pi)-T_avg) %Change in KE [J]
 
 
 %% Final Project Goal, 'Coefficient Fluctuation in Speed' C_f
