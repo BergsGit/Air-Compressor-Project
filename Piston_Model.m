@@ -56,7 +56,7 @@ grid on;
 
 % Calculate top dead center and bottom dead center
 TDC = y_max;          % Top Dead Center
-BDC = y_min;  % Bottom Dead Center
+BDC = y_min;            % Bottom Dead Center
 
 %% Print results of max and min piston position
 fprintf("Piston height range from [%0.3f m,%0.3f m], or " + ...
@@ -79,7 +79,7 @@ P_theta = zeros(size(theta)); %empty matrix to fill with pressure values
 
 %% loop calculating Pressure and volume as a function of theta for entire thermo process
 for ii = 1:length(theta)
-    th = theta(ii); %current crank angle [rad]
+    th = theta(ii); % current crank angle [rad]
     y_B = AB*cos(asin(AoA*sin(th)/AB)) - AoA*cos(th);   % Current piston height from gnd [m]
     vol_height_th = y_max + h_clear - y_B; 
     vol_th = cyl_area .* vol_height_th;  
@@ -193,7 +193,7 @@ cf = dKE./(comp_speed.^2.*J_range);
 % Find where cf is minimized and print minimum cf anf resulting J
 [min_cf, idx] = min(abs(cf));
 J_cf_min = J_range(idx);
-fprintf('The minimum cf is %0.4f at J = %0.4f kg*m^2\n', min_cf, J_cf_min)
+fprintf('The minimum cf is %0.2f at J = %0.4f kg*m^2\n\n', min_cf, J_cf_min)
 
 % Find resulting radius and diameter from J
 %% Flywheel
@@ -201,16 +201,15 @@ rho = 7200;             % material density, [kg/m^3]
 b = 0.0254;             % axial thickness, [m]
 t_t = 0.0381;           % Radial Thickness, [m]
 
-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%
+%% Flywheel
 %(b*Do^3)/2+((b^2)*Do^2)/2+b^4=ro4_ri4;
 % Calculate Unknowns
-D_o = linspace(0.1,1,100000);              % Outer Diameter, [m]
+D_o = linspace(0.1,1,100000);               % Outer Diameter, [m]
 D_i = D_o - 2*t_t;                          % Inner Diameter, [m]
 r_o = D_o./2;                               % Outer Radius, [m]
 r_i = D_i./2;                               % Inner Radius, [m]
-mass = rho.*pi.*b.*(r_o.^2-r_i.^2);       % mass, [kg]
+mass = rho.*pi.*b.*(r_o.^2-r_i.^2);         % mass, [kg]
 J = 1/2.*mass.*(r_o.^2+r_i.^2);             % Rotational Inertia, [kg/m^2]
 
 % Plot J vs outer radius
@@ -235,12 +234,14 @@ for k = 1:length(J_cross_idx)
     r_o_intersects(k) = r_o(J_cross_idx(k));
 end
 
-% Display intersection points
-fprintf('ro at Intersection: %0.4f m\n\n',r_o_intersects);
 d_outer = 2*r_o(J_cross_idx(1));
 d_inner = 2*r_i(J_cross_idx(1));
 mass_final = mass(J_cross_idx(1));
 
+% Display intersection points
+fprintf('Outer diameter: %0.4f m\n',d_outer);
+fprintf('Inner diameter: %0.4f m\n',d_inner);
+fprintf('Mass: %0.4f m\n\n',mass_final);
 
 % Find both maximum and minimum angular velocities
 w_avg = comp_speed;                  % Nominal average speed [rad/s]
@@ -252,5 +253,29 @@ C_f_actual = (w_max - w_min) / w_avg;
 fprintf('Max Speed: %0.2f rad/s\n', w_max);
 fprintf('Min Speed: %0.2f rad/s\n', w_min);
 
-Power = T_avg*w_avg;
+P_avg = T_avg*w_avg;
+
+%% Calculate and Plot Flywheel Speed vs Crank Angle
+% Calculate net torque vector
+T_net = T_load_theta - T_avg;
+
+% Calculate cumulative energy change Delta KE as a function of theta
+dKE_theta = cumtrapz(theta, T_net);
+
+% Calculate instantaneous angular velocity w(theta)
+% w(theta) = sqrt(w_avg^2 + 2*dKE(theta)/J)
+w_theta = sqrt(comp_speed^2 + (2 .* dKE_theta ./ J_cf_min));
+
+%% Plot Speed vs Crank Angle
+figure()
+plot(theta, w_theta, 'LineWidth', 1);
+hold on;
+yline(comp_speed, 'k--', 'Average Speed (\omega_0)', 'LineWidth', 1);
+title('Flywheel Angular Velocity vs. Crank Angle');
+xlabel('\theta (rad)');
+ylabel('\omega (rad/s)');
+xlim([0, max(theta)]);
+xticks(0:pi/2:max(theta));
+xticklabels(["0","\pi/2","\pi","3/2\pi","2\pi","5/2\pi","3\pi","7/2\pi","4\pi"]);
+grid on;
 
