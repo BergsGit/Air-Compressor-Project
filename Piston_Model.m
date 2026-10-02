@@ -13,9 +13,9 @@ h_clear = 0.0222758;           % Head Clearance, [m]
 p_atm = 101325;                % Inlet/Atmospheric Pressure [Pa] absolute, 14.7 [PSI]
 p_out_g = 344738;              % Outlet Pressure, [Pa] gage, 50 [PSI]
 p_out_a = p_out_g + p_atm;     % Outlet Pressure, [Pa] absolute
-comp_speed = 84;               % Compressor Speed, [rad/s]
+comp_speed = 800*pi/30;               % Compressor Speed, [rad/s]
 
-theta=linspace(0,2*pi,10000);       % Crank Angle, [rad]
+theta=linspace(0,2*pi,1000000);       % Crank Angle, [rad]
 phi = asin(AoA.*sin(theta)./AB);   % Rod Angle, [rad]
 
 % Calculate theta to height correlation
@@ -187,50 +187,70 @@ cf_guess = 0.05;
 J_guess = dKE./(cf_guess.*comp_speed.^2);
 
 % Range J around estimate and find resulting ranged cf
-J_range = linspace(0,J_guess*2,10000);
+J_range = linspace(0,J_guess,1000000);
 cf = dKE./(comp_speed.^2.*J_range);
 
 % Find where cf is minimized and print minimum cf anf resulting J
 [min_cf, idx] = min(abs(cf));
-J_min = J_range(idx);
-fprintf('The minimum cf is %0.4f at J = %0.4f kg*m^2\n', min_cf, J_min)
+J_cf_min = J_range(idx);
+fprintf('The minimum cf is %0.4f at J = %0.4f kg*m^2\n', min_cf, J_cf_min)
 
 % Find resulting radius and diameter from J
 %% Flywheel
 rho = 7200;             % material density, [kg/m^3]
 b = 0.0254;             % axial thickness, [m]
 t_t = 0.0381;           % Radial Thickness, [m]
-ro4_ri4 = (2*J_min) / (rho*pi*b);  %J=(m/2)(ro^4-ri^4), find (ro^4-ri^4) to find ideal diameter
+
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%
 %(b*Do^3)/2+((b^2)*Do^2)/2+b^4=ro4_ri4;
 % Calculate Unknowns
-D_o = linspace(0.1,0.25);                   % Outer Diameter, [m]
+D_o = linspace(0.1,1,100000);              % Outer Diameter, [m]
 D_i = D_o - 2*t_t;                          % Inner Diameter, [m]
 r_o = D_o./2;                               % Outer Radius, [m]
 r_i = D_i./2;                               % Inner Radius, [m]
-mass = rho.*pi.*t_t.*(r_o.^2-r_i.^2);       % mass, [kg]
-J = 1/2.*mass.*(r_o.^2-r_i.^2);             % Rotational Inertia, [kg/m^2]
-%}
+mass = rho.*pi.*b.*(r_o.^2-r_i.^2);       % mass, [kg]
+J = 1/2.*mass.*(r_o.^2+r_i.^2);             % Rotational Inertia, [kg/m^2]
+
+% Plot J vs outer radius
+figure()
+plot(r_o, J,'linewidth',1)
+title('Rotational Inertia vs. Outer Radius')
+yline(J_cf_min,'label','J_{cf min}')
+xlabel('r_o [m]')
+ylabel('J [kg/m^2]')
+grid on;
+
+% Find outer radius when J is J_cf_min 
+% Difference vector
+J_diff = J - J_cf_min;
+
+% Find where the sign changes (zeros)
+J_cross_idx = find(J_diff(1:end-1) .* J_diff(2:end) <= 0);
+
+% Use index to find what ro it intersects at
+r_o_intersects = zeros(size(J_cross_idx));
+for k = 1:length(J_cross_idx)
+    r_o_intersects(k) = r_o(J_cross_idx(k));
+end
+
+% Display intersection points
+fprintf('ro at Intersection: %0.4f m\n\n',r_o_intersects);
+d_outer = 2*r_o(J_cross_idx(1));
+d_inner = 2*r_i(J_cross_idx(1));
+mass_final = mass(J_cross_idx(1));
 
 
-%% Final Project Goal, 'Coefficient Fluctuation in Speed' C_f
-% we should already have values of omega at this point
+% Find both maximum and minimum angular velocities
+w_avg = comp_speed;                  % Nominal average speed [rad/s]
+w_max = w_avg * (1 + min_cf / 2);    % Maximum angular velocity [rad/s]
+w_min = w_avg * (1 - min_cf / 2);    % Minimum angular velocity [rad/s]
 
-% w_max = max(w);
-% w_min = min(w); 
-% w_avg = mean(w);
+% Verify coefficient of fluctuation
+C_f_actual = (w_max - w_min) / w_avg;
+fprintf('Max Speed: %0.2f rad/s\n', w_max);
+fprintf('Min Speed: %0.2f rad/s\n', w_min);
 
-%C_f = (w_max - w_min) ./ w_avg;
+Power = T_avg*w_avg;
 
-%if C_f <= 0.05
-   % disp('C_f value is sufficient')
-
-%else
-  %  disp('Warning: C_f value is too large')
-
-%end
-
-%% Calculate flywheel inertia
-%Use both inertia equations to relate to flywheel specifications
-%J = (dKE / )
