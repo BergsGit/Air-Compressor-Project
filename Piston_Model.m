@@ -241,7 +241,7 @@ mass_final = mass(J_cross_idx(1));
 % Display intersection points
 fprintf('Outer diameter: %0.4f m\n',d_outer);
 fprintf('Inner diameter: %0.4f m\n',d_inner);
-fprintf('Mass: %0.4f m\n\n',mass_final);
+fprintf('Mass: %0.4f Kg\n\n',mass_final);
 
 % Find both maximum and minimum angular velocities
 w_avg = comp_speed;                  % Nominal average speed [rad/s]
