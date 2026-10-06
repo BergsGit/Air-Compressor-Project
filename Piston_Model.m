@@ -26,9 +26,8 @@ y_min = min(y_B);
 
 
 %% Plot theta vs height of piston
-subplot(1,2,1)
-plot(theta, y_B,linewidth=1)
-title("Height of Piston vs Angle of Crank")
+plot(theta, y_B,'k-',linewidth=1)
+title("Displacement vs Crank Angle")
 xlabel("\theta (rad)");
 ylabel("y position (m)");
 xlim([0,max(theta)]);
@@ -36,22 +35,25 @@ ylim([min(y_B)*0.9,max(y_B)*1.1]);
 xticks(0:pi/2:max(theta))
 xticklabels(["0","\pi/2","\pi","3/2\pi","2\pi","5/2\pi","3\pi", ...
     "7/2\pi", "4\pi"])
-yline((y_max+y_min)/2,'linestyle','--',Label="Centerline");
+yline((y_max+y_min)/2,'linestyle','--',Label="Centerline",linewidth=1);
 grid on;
 hold off;
 
-%% Plot phi vs height of piston
-subplot(1,2,2)
-plot(phi, y_B,linewidth=1)
-title("Height of Piston vs Angle of Rod")
-xlabel("\phi (rad)");
-ylabel("y position (m)");
-xlim([min(phi)*1.1,max(phi)*1.1]);
-ylim([min(y_B)*0.9,max(y_B)*1.1]);
-xticks(0:pi/2:max(phi))
-xticklabels(["0","\pi/2","\pi","3/2\pi","2\pi","5/2\pi","3\pi", ...
-    "7/2\pi", "4\pi"])
-grid on;
+fig = gcf;
+exportgraphics(fig, 'Displacement_vs_Angle.png', 'Resolution', 300);
+
+% %% Plot phi vs height of piston
+% subplot(1,2,2)
+% plot(phi, y_B,linewidth=1)
+% title("Height of Piston vs Angle of Rod")
+% xlabel("\phi (rad)");
+% ylabel("y position (m)");
+% xlim([min(phi)*1.1,max(phi)*1.1]);
+% ylim([min(y_B)*0.9,max(y_B)*1.1]);
+% xticks(0:pi/2:max(phi))
+% xticklabels(["0","\pi/2","\pi","3/2\pi","2\pi","5/2\pi","3\pi", ...
+%     "7/2\pi", "4\pi"])
+% grid on;
 
 
 % Calculate top dead center and bottom dead center
@@ -85,36 +87,23 @@ for ii = 1:length(theta)
     vol_th = cyl_area .* vol_height_th;  
 
    if (th >= 0 && th <= 2.39) %polytropic compression until P = 50PSI
-      P_theta(ii) = Pvn_constant_compression ./ (vol_th .^ n); 
-
+        P_theta(ii) = Pvn_constant_compression ./ (vol_th .^ n); 
+        
    elseif (th > 2.39 && th <= pi) %constant pressure discharge after P = 50 PSI
-      P_theta(ii) = p_out_a;
-
+        P_theta(ii) = p_out_a;
+        
    elseif (th > pi && th <= 4.48) %polytropic expansion
-      P_theta(ii) = Pvn_constant_expansion ./ (vol_th .^ n); 
-
+        P_theta(ii) = Pvn_constant_expansion ./ (vol_th .^ n); 
+    
    elseif (th > 4.48 && th <= 2*pi) %constant pressure intanke
-      P_theta(ii) = p_atm;
-
-   elseif (th >= 2*pi && th <= 2.39 + 2*pi) %polytropic compression
-      P_theta(ii) = Pvn_constant_compression ./ (vol_th .^ n);
-
-   elseif (th > 2.39 + 2*pi && th <= 3*pi) %constant pressure discharge
-      P_theta(ii) = p_out_a;
-
-   elseif (th > 3*pi && th <= 4.48 + 2*pi) %polytropic expansion
-      P_theta(ii) = Pvn_constant_expansion ./ (vol_th .^ n); 
-
-   else %constant pressure intake
-      P_theta(ii) = p_atm;
-
+        P_theta(ii) = p_atm;
    end
 end
 
+
 %% Plot of Pressure as a function of Theta
-figure;
-subplot(1,2,1)
-plot(theta, P_theta,'linewidth',1)
+figure();
+plot(theta, P_theta,'k-','linewidth',1)
 title({'Pressure in Cylinder vs Angle of Crank';''})
 xlabel("\theta (rad)");
 ylabel("Pressure (Pa)");
@@ -125,9 +114,12 @@ xticklabels(["0","\pi/2","\pi","3/2\pi","2\pi","5/2\pi","3\pi", ...
     "7/2\pi", "4\pi"])
 grid on;
 
+fig = gcf;
+exportgraphics(fig, 'Pressure_vs_Angle.png', 'Resolution', 300);
+
 %% Plot Pressure vs Volume
-subplot(1,2,2)
-plot(vol_theta, P_theta,'linewidth',1)
+figure()
+plot(vol_theta, P_theta,'k-','linewidth',1)
 title({'Pressure in Cylinder vs Volume';''})
 xlabel("Volume (m^3)");
 ylabel("Pressure (Pa)");
@@ -135,6 +127,8 @@ xlim([0.00005 0.0004]);
 ylim([50000,500000]);
 grid on;
 
+fig = gcf;
+exportgraphics(fig, 'Pressure_vs_Volume.png', 'Resolution', 300);
 
 %% Calculate loading torque
 % Calculate F from thermo equations
@@ -149,13 +143,16 @@ T_avg = (1 / (2*pi)) * trapz(theta(1:idx_2pi), T_load_theta(1:idx_2pi));
 fprintf('Average Torque is %0.3f Nm\n', T_avg);
 
 figure()
-plot(theta,T_load_theta,'linewidth',1)
-title("Torque vs. Theta")
+plot(theta,T_load_theta,'k-','linewidth',1)
+title("Torque vs Crank Angle")
 xlabel('\theta (rad)')
 ylabel('Torque (Nm)')
-yline(T_avg,'label','Average Torque','linestyle','--')
+yline(T_avg,'label','Average Torque','linestyle','--',linewidth=1)
 xlim([0,max(theta)])
 grid on;
+
+fig = gcf;
+exportgraphics(fig, 'Torque_vs_Angle.png', 'Resolution', 300);
 
 
 %% Calculate where T_load_theta intersects with T_avg
@@ -212,14 +209,14 @@ r_i = D_i./2;                               % Inner Radius, [m]
 mass = rho.*pi.*b.*(r_o.^2-r_i.^2);         % mass, [kg]
 J = 1/2.*mass.*(r_o.^2+r_i.^2);             % Rotational Inertia, [kg/m^2]
 
-% Plot J vs outer radius
-figure()
-plot(r_o, J,'linewidth',1)
-title('Rotational Inertia vs. Outer Radius')
-yline(J_cf_min,'label','J_{cf min}')
-xlabel('r_o [m]')
-ylabel('J [kg/m^2]')
-grid on;
+% % Plot J vs outer radius
+% figure()
+% plot(r_o, J,'linewidth',1)
+% title('Rotational Inertia vs Outer Radius')
+% yline(J_cf_min,'label','J_{cf min}')
+% xlabel('r_o [m]')
+% ylabel('J [kg/m^2]')
+% grid on;
 
 % Find outer radius when J is J_cf_min 
 % Difference vector
@@ -241,7 +238,8 @@ mass_final = mass(J_cross_idx(1));
 % Display intersection points
 fprintf('Outer diameter: %0.4f m\n',d_outer);
 fprintf('Inner diameter: %0.4f m\n',d_inner);
-fprintf('Mass: %0.4f Kg\n\n',mass_final);
+fprintf('Mass: %0.4f kg\n',mass_final);
+fprintf('Rotational Inertia: %0.4f kg*m^2\n\n',J_cf_min);
 
 % Find both maximum and minimum angular velocities
 w_avg = comp_speed;                  % Nominal average speed [rad/s]
@@ -250,8 +248,8 @@ w_min = w_avg * (1 - min_cf / 2);    % Minimum angular velocity [rad/s]
 
 % Verify coefficient of fluctuation
 C_f_actual = (w_max - w_min) / w_avg;
-fprintf('Max Speed: %0.2f rad/s\n', w_max);
-fprintf('Min Speed: %0.2f rad/s\n', w_min);
+fprintf('Max angular velocity: %0.2f rad/s\n', w_max);
+fprintf('Min angular velocity: %0.2f rad/s\n', w_min);
 
 P_avg = T_avg*w_avg;
 
@@ -259,23 +257,49 @@ P_avg = T_avg*w_avg;
 % Calculate net torque vector
 T_net = T_load_theta - T_avg;
 
-% Calculate cumulative energy change Delta KE as a function of theta
-dKE_theta = cumtrapz(theta, T_net);
+% Define ODE handle using interp1
+% 'linear' interpolation with 'extrap' ensures it handles boundary floating-point edge cases
+J_flywheel = J_cf_min;
+dwdtheta = @(th, w) interp1(theta, T_net, th, 'linear', 'extrap') / (J_flywheel * w);
 
-% Calculate instantaneous angular velocity w(theta)
-% w(theta) = sqrt(w_avg^2 + 2*dKE(theta)/J)
-w_theta = sqrt(comp_speed^2 + (2 .* dKE_theta ./ J_cf_min));
+% Set initial condition and integrate
+w0 = 82.3;                    % Initial guess, set to yield w_avg = average w
+theta_span = [0, 2*pi];       % Integration span
 
-%% Plot Speed vs Crank Angle
+[theta_ode, w_ode] = ode45(dwdtheta, theta_span, w0);
+
+% Plot w vs theta
 figure()
-plot(theta, w_theta, 'LineWidth', 1);
-hold on;
-yline(comp_speed, 'k--', 'Average Speed (\omega_0)', 'LineWidth', 1);
-title('Flywheel Angular Velocity vs. Crank Angle');
+plot(theta_ode, w_ode,'k-', 'LineWidth', 1);
+yline(w0, 'k--', 'Average Speed (\omega_0)', linewidth=1, ...
+    LabelHorizontalAlignment='center');
+title('Flywheel Speed vs Crank Angle');
 xlabel('\theta (rad)');
 ylabel('\omega (rad/s)');
-xlim([0, max(theta)]);
-xticks(0:pi/2:max(theta));
+xlim([0, 2*pi]);
+xticks(0:pi/2:2*pi);
 xticklabels(["0","\pi/2","\pi","3/2\pi","2\pi","5/2\pi","3\pi","7/2\pi","4\pi"]);
 grid on;
 
+fig = gcf;
+exportgraphics(fig, 'Speed_vs_Angle.png', 'Resolution', 300);
+
+fprintf('\nPower needed for motor without the flywheel = %0.2f W\n', max(T_load_theta)*w_avg)
+fprintf('Power needed for motor with the flywheel = %0.2f W\n', mean(T_load_theta)*w_avg)
+
+%% Finding Work and Efficiency
+
+% Const P discharge th > 2.39 && th <= pi
+Bounds = (theta > 2.39) & (theta <= pi);
+P_bounded = P_theta(Bounds);
+vol_bounded = vol_theta(Bounds);
+W_out = trapz(vol_bounded,P_bounded);
+
+Power_in = T_avg*w_avg;
+time = 2*pi/comp_speed;
+
+W_in = Power_in*time;
+
+Efficiency = abs(W_out/W_in);
+
+fprintf('Efficiency of air compressor = %0.2f percent\n', Efficiency*100)
