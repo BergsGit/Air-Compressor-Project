@@ -293,7 +293,7 @@ T_net = T_load_theta - T_avg;
 % Define ODE handle using interp1
 dwdtheta = @(th,w) interp1(theta,T_net,th,'linear','extrap')/(J_cf*w);
 
-w0 = 82.3;          % Initial guess, set to yield w_avg = average w
+w0 = 82.3;          % Initial guess, found so that w_avg = average w
 
 % Use ode45 to find angular velocity at each theta
 [theta_ode, w_ode] = ode45(dwdtheta, [0,2*pi], w0);
@@ -302,7 +302,7 @@ w0 = 82.3;          % Initial guess, set to yield w_avg = average w
 figure()
 plot(theta_ode, w_ode,'k-', 'LineWidth', 1);
 % Plot initial angular velocity
-yline(w0, 'k--', 'Average Speed (\omega_0)', linewidth=1, ...
+yline(w_avg, 'k--', 'Average Speed (\omega_0)', linewidth=1, ...
     LabelHorizontalAlignment='center');
 %title('Flywheel Speed vs Crank Angle');
 xlabel('\theta (rad)');
