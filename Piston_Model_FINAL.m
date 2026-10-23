@@ -41,9 +41,9 @@ y_min = min(y_B);   % Minimum piston height [m]
 
 % Plot theta vs piston height
 plot(theta, y_B,'k-',linewidth=1)
-title("Displacement vs Crank Angle")
-xlabel("\theta (rad)");
-ylabel("y position (m)");
+%title("Displacement vs Crank Angle")
+xlabel("Crank Angle, \theta (rad)");
+ylabel("Vertical Position (m)");
 xlim([0,max(theta)]);
 ylim([min(y_B)*0.9,max(y_B)*1.1]);
 xticks(0:pi/2:max(theta))
@@ -98,6 +98,33 @@ Pvn_constant_compression = p_atm .* (vol_BDC).^n;
 Pvn_constant_expansion = p_out_a .* (vol_TDC).^n;
 
 %% Calculate Pressure and volume as a function of theta for entire process
+% 1. Volume at the end of polytropic compression (P reaches P_out_a)
+V_2 = vol_BDC * (p_atm / p_out_a)^(1/n);
+
+% Piston height corresponding to V_2
+y_2 = y_max + h_clear - (V_2 / cyl_area);
+
+% Solve for theta in compression stroke (between 0 and pi)
+% Using 1D numerical interpolation over the first half cycle (0 to pi):
+idx_half1 = 1:floor(length(theta)/2);
+% Interpolates to find what Y corresponds to X_target interp1(X,Y,X_target)
+th_2 = interp1(y_B(idx_half1), theta(idx_half1), y_2);
+
+% 2. Volume at the end of polytropic expansion (P drops back to P_atm)
+V_4 = vol_TDC * (p_out_a / p_atm)^(1/n);
+
+% Piston height corresponding to V_4
+y_4 = y_max + h_clear - (V_4 / cyl_area);
+
+% Solve for theta in expansion stroke (between pi and 2*pi):
+idx_half2 = floor(length(theta)/2)+1 : length(theta);
+th_4 = interp1(y_B(idx_half2), theta(idx_half2), y_4);
+
+% Print calculated transition angles
+fprintf('Compression ends / Discharge starts at theta = %0.4f rad (%0.2f deg)\n', ...
+    th_2, rad2deg(th_2));
+fprintf('Expansion ends / Intake starts at theta = %0.4f rad (%0.2f deg)\n\n', ...
+    th_4, rad2deg(th_4));
 
 % Pre-allocate pressure matrix to fill with pressure values
 P_theta = zeros(size(theta)); 
@@ -112,19 +139,19 @@ for ii = 1:length(theta)
     vol_th = cyl_area .* vol_height_th; % Volume at theta(ii)
 
     % Polytropic compression until P = 50 PSI
-    if (th >= 0 && th <= 2.39) 
+    if (th >= 0 && th <= th_2) 
         P_theta(ii) = Pvn_constant_compression ./ (vol_th .^ n); 
         
     % Constant pressure discharge after P = 50 PSI
-    elseif (th > 2.39 && th <= pi) 
+    elseif (th > th_2 && th <= pi) 
         P_theta(ii) = p_out_a;
         
     % Polytropic expansion
-    elseif (th > pi && th <= 4.48) 
+    elseif (th > pi && th <= th_4) 
         P_theta(ii) = Pvn_constant_expansion ./ (vol_th .^ n); 
     
     % Constant pressure intanke
-    elseif (th > 4.48 && th <= 2*pi) 
+    elseif (th > th_4 && th <= 2*pi) 
         P_theta(ii) = p_atm;
     end
 end
@@ -134,8 +161,8 @@ end
 %% Plot of pressure as a function of theta
 figure();
 plot(theta, P_theta,'k-','linewidth',1)
-title({'Pressure in Cylinder vs Angle of Crank';''})
-xlabel("\theta (rad)");
+%title({'Pressure in Cylinder vs Angle of Crank';''})
+xlabel("Crank Angle, \theta (rad)");
 ylabel("Pressure (Pa)");
 xlim([0,max(theta)]);
 ylim([50000,500000]);
@@ -151,7 +178,7 @@ exportgraphics(fig, 'Pressure_vs_Angle.png', 'Resolution', 300);
 %% Plot Pressure vs Volume
 figure()
 plot(vol_theta, P_theta,'k-','linewidth',1)
-title({'Pressure in Cylinder vs Volume';''})
+%title({'Pressure in Cylinder vs Volume';''})
 xlabel("Volume (m^3)");
 ylabel("Pressure (Pa)");
 xlim([0.00005 0.0004]);
@@ -163,8 +190,9 @@ fig = gcf;
 exportgraphics(fig, 'Pressure_vs_Volume.png', 'Resolution', 300);
 
 %% Calculate loading torque
+P_theta_gage=P_theta-p_atm; % Adjust P_theta to be gage pressure
 % Calculate Force on piston face at each angle theta [N]
-F_theta = P_theta.*cyl_area; 
+F_theta = P_theta_gage.*cyl_area; 
 % Calculate Loading torque [Nm] as a function of theta
 T_load_theta = F_theta.*AoA.*(sin(theta)-(tan(phi).*cos(theta))); 
 
@@ -179,8 +207,8 @@ fprintf('Average Torque is %0.3f Nm\n', T_avg);
 % Plot torque vs theta
 figure()
 plot(theta,T_load_theta,'k-','linewidth',1)
-title("Torque vs Crank Angle")
-xlabel('\theta (rad)')
+%title("Torque vs Crank Angle")
+xlabel("Crank Angle, \theta (rad)");
 ylabel('Torque (Nm)')
 % Plot average torque
 yline(T_avg,'label','Average Torque','linestyle','--',linewidth=1)
@@ -293,7 +321,7 @@ T_net = T_load_theta - T_avg;
 % Define ODE handle using interp1
 dwdtheta = @(th,w) interp1(theta,T_net,th,'linear','extrap')/(J_cf*w);
 
-w0 = 82.3;          % Initial guess, set to yield w_avg = average w
+w0 = 82.3;          % Initial guess, found so that w_avg = average w
 
 % Use ode45 to find angular velocity at each theta
 [theta_ode, w_ode] = ode45(dwdtheta, [0,2*pi], w0);
@@ -302,11 +330,11 @@ w0 = 82.3;          % Initial guess, set to yield w_avg = average w
 figure()
 plot(theta_ode, w_ode,'k-', 'LineWidth', 1);
 % Plot initial angular velocity
-yline(w0, 'k--', 'Average Speed (\omega_0)', linewidth=1, ...
+yline(w_avg, 'k--', 'Average Speed (\omega_0)', linewidth=1, ...
     LabelHorizontalAlignment='center');
-title('Flywheel Speed vs Crank Angle');
-xlabel('\theta (rad)');
-ylabel('\omega (rad/s)');
+%title('Flywheel Speed vs Crank Angle');
+xlabel("Crank Angle, \theta (rad)");
+ylabel('Rotational Velocity, \omega (rad/s)');
 xlim([0, 2*pi]);
 xticks(0:pi/2:2*pi);
 xticklabels(["0","\pi/2","\pi","3/2\pi","2\pi","5/2\pi","3\pi", ...
@@ -325,9 +353,9 @@ fprintf('Power needed for motor with the flywheel = %0.2f W\n', ...
     mean(T_load_theta)*w_avg)
 
 %% Find Work and Efficiency
-% Set bounds to constant pressure discharge where theta >2.39 and <=pi
-Bounds = (theta > 2.39) & (theta <= pi);
-P_bounded = P_theta(Bounds);
+% Set bounds to constant pressure discharge where theta >th_2 and <=pi
+Bounds = (theta > th_2) & (theta <= pi);
+P_bounded = P_theta_gage(Bounds);
 vol_bounded = vol_theta(Bounds);
 
 % Calculate work out at constant pressure discharge
