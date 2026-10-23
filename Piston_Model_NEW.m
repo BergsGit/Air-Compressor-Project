@@ -371,3 +371,27 @@ Efficiency = abs(W_out/W_in);
 
 % Print efficiency value as a percentage
 fprintf('Efficiency of air compressor = %0.2f percent\n', Efficiency*100)
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Homework 2
+%% Evaluate W
+
+
+function [Work_total] = Work_calc(P_int,efficiency)
+    % Comments here act as documentation for 'help functionName'
+    Temp_1 = 295.15;            % Ambient air at 20 [C] = 295.15 [K]
+    P_1 = p_atm;                % Atmospheric pressure
+
+    Temp_int = Temp_1*(P_int/P_1)^((n-1)/n);    
+    Temp_3 = Temp_int - efficiency*(Temp_int-Temp_1);
+
+
+end
+
+P_int = linspace(P_atm, p_out_a,100000);
+Work_calc(P_int, 1)
+    Temp_2
+
+
