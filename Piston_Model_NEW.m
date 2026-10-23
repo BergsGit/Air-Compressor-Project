@@ -270,15 +270,6 @@ r_i = D_i./2;                               % Inner Radius, [m]
 mass = rho.*pi.*b.*(r_o.^2-r_i.^2);         % mass, [kg]
 J_D = 1/2.*mass.*(r_o.^2+r_i.^2);           % Rotational Inertia, [kg/m^2]
 
-% UNNECESSARY:
-% % Plot J vs outer radius
-% figure()
-% plot(r_o, J,'linewidth',1)
-% title('Rotational Inertia vs Outer Radius')
-% yline(cf,'label','J_{cf min}')
-% xlabel('r_o [m]')
-% ylabel('J [kg/m^2]')
-% grid on;
 
 %% Find diameters, rotational inertia, and mass
 % Find outer radius when J is J_cf 
@@ -376,21 +367,68 @@ fprintf('Efficiency of air compressor = %0.2f percent\n', Efficiency*100)
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Homework 2
+close all;
 %% Evaluate W
-
-
-function [Work_total] = Work_calc(P_int,efficiency,p_atm,n)
-    % Comments here act as documentation for 'help functionName'
+% Function outputting work saved and total compression work for the 2 stage
+% compressor
+function [Work_saved, Work_total] = Work_calc(P_int,efficiency,n,vol_BDC, ...
+    p_out_a)
+    % Finds work saved and total compression work of a 2 stage piston
     Temp_1 = 295.15;            % Ambient air at 20 [C] = 295.15 [K]
-    P_1 = p_atm;                % Atmospheric pressure
+    P_1 = 101325;               % Atmospheric Pressure [Pa]
+    P_2 = p_out_a;              % Maximum pressure at state 2 [Pa]
 
     Temp_int = Temp_1.*(P_int/P_1).^((n-1)/n);    
     Temp_3 = Temp_int - efficiency.*(Temp_int-Temp_1);
-    Work_total = ;
+    
+    % Work from state 1 at p_atm to P_int:
+    W1 = (n/(n-1)).*P_1.*vol_BDC.*(((P_int./P_1).^((n-1)./n))-1);
+    
+    % Volume at intermediate stage
+    V_int = vol_BDC.*(P_1./P_int).^(1/n).*(Temp_3./Temp_int);
 
+    % Work from P_int to state 2 at p_out_a
+    W2 = (n/(n-1)).*P_int.*V_int.*(((P_2./P_int).^((n-1)./n))-1);
+
+    % Calculate Work from state 1 to state 2 uninterrupted
+    W12 = (n/(n-1)).*P_1.*vol_BDC.*(((P_2./P_1).^((n-1)./n))-1);
+
+    % Calculate total work and work saved to report as outputs
+    Work_total = W1+W2;
+    Work_saved = W12-Work_total;
 end
 
 P_int = linspace(p_atm, p_out_a,100000);
-[Work_T_eff1] = Work_calc(P_int, 1,p_atm,n);
-[Work_T_eff2] = Work_calc(P_int, 0.6,p_atm,n);
 
+% Efficiency of 1.0:
+[Work_saved_1,Work_total_1] = Work_calc(P_int, 1,n,vol_BDC,p_out_a);
+idx_W1 = find(Work_total_1 == min(Work_total_1));
+Min_W1 = Work_total_1(idx_W1);
+Min_P_int1 = P_int(idx_W1);
+
+% Efficiency of 0.6:
+[Work_saved_2,Work_total_2] = Work_calc(P_int, 0.6, n,vol_BDC,p_out_a);
+idx_W2 = find(Work_total_2 == min(Work_total_2));
+Min_W2 = Work_total_2(idx_W2);
+Min_P_int2 = P_int(idx_W2);
+
+
+figure()
+plot(P_int,Work_total_1,'linewidth',1,'Color','k')
+hold on;
+plot(Min_P_int1,Min_W1,'ko','markerfacecolor','k')
+hold on;
+plot(P_int,Work_total_2,'k--','linewidth',1)
+hold on;
+plot(Min_P_int2,Min_W2,'ks','markerfacecolor','k')
+xlabel('Intermediate Pressure, P_{int} [Pa]')
+ylabel('Total Compression Work, W_{comp,t} [J]')
+legend('Efficiency \eta = 1.0','Minimum Work for \eta = 1.0','Efficiency \eta = 0.6', ...
+    'Minimum Work for \eta = 0.6')
+grid on;
+
+% Print results
+fprintf(['\nIntermediate Pressure for minimum calculated work of ' ...
+    '%0.2f J at 100%% effectiveness is %0.f Pa\n'],Min_W1,Min_P_int1)
+fprintf(['Intermediate Pressure for minimum calculated work of ' ...
+    '%0.2f J at 60%% effectiveness is %0.f Pa\n'],Min_W2,Min_P_int2)
