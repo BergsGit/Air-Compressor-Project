@@ -379,19 +379,18 @@ fprintf('Efficiency of air compressor = %0.2f percent\n', Efficiency*100)
 %% Evaluate W
 
 
-function [Work_total] = Work_calc(P_int,efficiency)
+function [Work_total] = Work_calc(P_int,efficiency,p_atm,n)
     % Comments here act as documentation for 'help functionName'
     Temp_1 = 295.15;            % Ambient air at 20 [C] = 295.15 [K]
     P_1 = p_atm;                % Atmospheric pressure
 
-    Temp_int = Temp_1*(P_int/P_1)^((n-1)/n);    
-    Temp_3 = Temp_int - efficiency*(Temp_int-Temp_1);
-
+    Temp_int = Temp_1.*(P_int/P_1).^((n-1)/n);    
+    Temp_3 = Temp_int - efficiency.*(Temp_int-Temp_1);
+    Work_total = ;
 
 end
 
-P_int = linspace(P_atm, p_out_a,100000);
-Work_calc(P_int, 1)
-    Temp_2
-
+P_int = linspace(p_atm, p_out_a,100000);
+[Work_T_eff1] = Work_calc(P_int, 1,p_atm,n);
+[Work_T_eff2] = Work_calc(P_int, 0.6,p_atm,n);
 
