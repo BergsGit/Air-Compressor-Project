@@ -421,7 +421,7 @@ hold on;
 plot(P_int,Work_total_2,'k--','linewidth',1)
 hold on;
 plot(Min_P_int2,Min_W2,'ks','markerfacecolor','k')
-xlabel('Intermediate Pressure, P_{int} [Pa]')
+xlabel('Intermediate Pressure, P_{int} [Pa, abs]')
 ylabel('Total Compression Work, W_{comp,t} [J]')
 legend('Efficiency \eta = 1.0','Minimum Work for \eta = 1.0','Efficiency \eta = 0.6', ...
     'Minimum Work for \eta = 0.6')
@@ -432,3 +432,159 @@ fprintf(['\nIntermediate Pressure for minimum calculated work of ' ...
     '%0.2f J at 100%% effectiveness is %0.f Pa\n'],Min_W1,Min_P_int1)
 fprintf(['Intermediate Pressure for minimum calculated work of ' ...
     '%0.2f J at 60%% effectiveness is %0.f Pa\n'],Min_W2,Min_P_int2)
+
+%% Optimization
+
+% Define function to call only work saved value
+function workVal = compWork(P_int,efficiency,n,vol_BDC, p_out_a)
+    [~,workVal] = Work_calc(P_int,efficiency,n,vol_BDC, p_out_a);
+end
+
+
+
+% begin function to minimize work for 2-stage compressor
+function min2stagepcompwork
+    
+    p_atm = 101325;     % Recall required input/output values
+    p_out_g = 344738;                   
+    p_out_a = p_out_g + p_atm;
+    n = 1.3;
+    vol_BDC = 3.923049646188528 .* 10.^(-4);
+
+% a.) Provide the objective function 
+    objFun1  = @(P_int) compWork(P_int,1,n,vol_BDC, p_out_a);
+    objFun06 = @(P_int) compWork(P_int,0.6,n,vol_BDC, p_out_a);
+
+% b.) List any and all constraints 
+    lb = p_atm;       % lower bound for P_int is intake pressure
+    ub = p_out_a;     % upper bound for P_int is outlet pressure
+    p_ig = 0.25 .* (p_out_a - p_atm) + p_atm; % Pressure initial guess [Pa]
+    % W_ig = 60; % Compression work initial guess [J]
+    % initGuesses = [p_ig; W_ig];
+
+% c.) Plot optimization process based on desired initial guess
+
+    % Setup History Tracking and Default Options
+    history1.x = p_ig; % Array to record solver trajectory
+    effVal = 1;
+
+    options = optimoptions('fmincon', ...
+        'Display', 'iter', ...      % Print iterations to command window
+        'OutputFcn', @saveHistory, ... % Callback to record x at each step
+        'StepTolerance', 1e-12, ...
+        'FiniteDifferenceStepSize', 1e-3, ...
+        'OptimalityTolerance', 1e-10); 
+
+    [p_int_opt1, minWork1] = fmincon(objFun1, p_ig, [], [], [], [], ...
+        lb, ub, [], options);
+
+
+    % Display results in command window
+    fprintf('\n--- 100 Percent Efficiency Optimization Results ---\n');
+    fprintf('Optimal Intermediate Pressure: %.4f\n', p_int_opt1);
+    fprintf('Minimum Work: %.4f\n', minWork1);
+ 
+    % Plot results
+    % P_int = linspace(p_atm, p_out_a, 100000);
+    
+    % X1 = meshgrid(10^5:10^4:4.5*10^5);
+    % Z1  = compWork(P_int,  1,n,vol_BDC, p_out_a); % Evaluate objective over grid
+    % Z06 = compWork(P_int,0.6,n,vol_BDC, p_out_a); % Evaluate objective over grid
+    Work_history1 = compWork(history1.x, 1,n,vol_BDC, p_out_a);
+
+
+    % 100% Efficiency Optimization Plot:
+    figure('Name', '100% Efficiency', 'NumberTitle', 'off');
+
+    % Draw optimization path
+    plot(history1.x(1,:), Work_history1, 'ro-', 'LineWidth', 2, ...
+        'MarkerFaceColor', 'y', 'MarkerSize', 6, 'DisplayName', ...
+        'Solver Trajectory');
+    
+    hold on;
+
+    % Highlight start and end points
+    plot(p_ig, 64.4242, 'bo', 'MarkerSize', 6, 'MarkerFaceColor', 'b', ...
+        'DisplayName', 'Start (P_{int,0})');
+    plot(p_int_opt1, minWork1, 'go', 'MarkerSize', 6, 'MarkerFaceColor',...
+        'g', 'DisplayName', 'Optimum (P_{int}^*)');
+
+    % Axis formatting
+    xlabel('Intermediate Pressure, P_{int} [Pa, abs]', 'FontSize', 14); 
+    ylabel('Total Compression Work, W_{comp,t} [J]', 'FontSize', 14);
+    legend('Location', 'northeast');
+    % axis([-0.2 3.2 -0.2 3.2]);
+
+
+
+
+    % 60 Efficiency
+     % Setup History Tracking and Default Options
+    history06.x = p_ig; % Array to record solver trajectory
+    effVal = 0.6;
+
+    % options = optimoptions('fmincon', ...
+    %     'Display', 'iter', ...      % Print iterations to command window
+    %     'OutputFcn', @saveHistory, ... % Callback to record x at each step
+    %     'StepTolerance', 1e-12, ...
+    %     'FiniteDifferenceStepSize', 1e-3, ...
+    %     'OptimalityTolerance', 1e-10); 
+
+    [p_int_opt06, minWork06] = fmincon(objFun06, p_ig, [], [], [], [], ...
+            lb, ub, [], options);
+
+    % Display results in command window
+    fprintf('\n--- 60 Percent Efficiency Optimization Results ---\n');
+    fprintf('Optimal Intermediate Pressure: %.4f\n', p_int_opt06);
+    fprintf('Minimum Work: %.4f\n', minWork06);
+
+    % Plot results
+    % P_int = linspace(p_atm, p_out_a, 100000);
+    
+    % X1 = meshgrid(10^5:10^4:4.5*10^5);
+    % Z1  = compWork(P_int,  1,n,vol_BDC, p_out_a); % Evaluate objective over grid
+    % Z06 = compWork(P_int,0.6,n,vol_BDC, p_out_a); % Evaluate objective over grid
+    Work_history06 = compWork(history06.x, 0.6,n,vol_BDC, p_out_a);
+
+
+    % 60% Efficiency Optimization Plot:
+    figure('Name', '60% Efficiency', 'NumberTitle', 'off');
+
+    % Draw optimization path
+    plot(history06.x(1,:), Work_history06, 'ro-', 'LineWidth', 2, ...
+        'MarkerFaceColor', 'y', 'MarkerSize', 6, 'DisplayName', ...
+        'Solver Trajectory');
+    
+    hold on;
+
+    % Highlight start and end points
+    plot(p_ig, 66.7522, 'bo', 'MarkerSize', 6, 'MarkerFaceColor', 'b', ...
+        'DisplayName', 'Start (P_{int,0})');
+    plot(p_int_opt06, minWork06, 'go', 'MarkerSize', 6, 'MarkerFaceColor',...
+        'g', 'DisplayName', 'Optimum (P_{int}^*)');
+
+    % Axis formatting
+    xlabel('Intermediate Pressure, P_{int} [Pa, abs]', 'FontSize', 14); 
+    ylabel('Total Compression Work, W_{comp,t} [J]', 'FontSize', 14);
+    legend('Location', 'northeast');
+    % axis([-0.2 3.2 -0.2 3.2]);
+
+
+
+
+
+    % Nested Output Function to store steps
+    function stop = saveHistory(x, optimValues, state)
+        stop = false;
+        if strcmp(state, 'iter') || strcmp(state, 'init')
+            if effVal == 1
+                history1.x = [history1.x, x];
+            else
+                history06.x = [history06.x, x];
+            end
+        end
+    end
+end
+
+
+min2stagepcompwork
