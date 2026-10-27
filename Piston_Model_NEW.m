@@ -494,7 +494,7 @@ function min2stagepcompwork
 
 
     % 100% Efficiency Optimization Plot:
-    figure('Name', '100% Efficiency', 'NumberTitle', 'off');
+    % figure('Name', '100% Efficiency', 'NumberTitle', 'off');
 
     % Draw optimization path
     plot(history1.x(1,:), Work_history1, 'ro-', 'LineWidth', 2, ...
@@ -548,7 +548,7 @@ function min2stagepcompwork
 
 
     % 60% Efficiency Optimization Plot:
-    figure('Name', '60% Efficiency', 'NumberTitle', 'off');
+    % figure('Name', '60% Efficiency', 'NumberTitle', 'off');
 
     % Draw optimization path
     plot(history06.x(1,:), Work_history06, 'ro-', 'LineWidth', 2, ...
