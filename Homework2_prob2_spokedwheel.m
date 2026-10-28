@@ -130,6 +130,7 @@ function flywheel_optimization(params)
             'Location', 'Northeast', 'FontSize', 9);
 end
 %% Helper Functions (Must receive 'params')
+
 %Volume function
 function V = obj_volume(x, params)
     r_o = x(1); Ws = x(2); t = x(3); t_rad = x(4);
@@ -141,9 +142,11 @@ function V = obj_volume(x, params)
     
     V = V_hub + V_rim + V_spokes; %total volume
 end
+
+% Nonlinear Constraint Function:Makes sure c <= 0
 function [c, ceq] = nonlcon(x, params)
-    ro = x(1); Ws = x(2); t = x(3); t_rad = x(4);
-    ri = ro - t_rad;
+    ro = x(1); Ws = x(2); t = x(3); t_rad = x(4); % Rim outer radius
+    ri = ro - t_rad; % Rim inner radius
     
     % Unpack parameters
     rho   = params.rho;
@@ -151,39 +154,43 @@ function [c, ceq] = nonlcon(x, params)
     rhub  = params.rhub;
     J_req = params.J_req;
     
-    % Inertia calculation
-    J_hub   = 0.5 * rho * pi * t * (rhub^4 - rs^4);
-    J_rim   = 0.5 * rho * pi * t * (ro^4 - ri^4);
-    m_spoke = rho * Ws * t * (ri - rhub);
-    J_spoke = m_spoke * ((1/3)*(ri^2 + rhub*ri + rhub^2) + (1/12)*Ws^2);
+    % Inertia calculations for each part of flywheel
+    J_hub   = 0.5 * rho * pi * t * (rhub^4 - rs^4); % Hub inertia
+    J_rim   = 0.5 * rho * pi * t * (ro^4 - ri^4); % Rim inertia
+    m_spoke = rho * Ws * t * (ri - rhub); % Mass of one spoke
+    J_spoke = m_spoke * ((1/3)*(ri^2 + rhub*ri + rhub^2) + (1/12)*Ws^2); % Single spoke inertia
     
-    J_total = J_hub + J_rim + 4 * J_spoke;
+    J_total = J_hub + J_rim + 4 * J_spoke; % Overall inertia
     
     % Nonlinear constraints (c <= 0)
     c(1) = J_req - J_total;        % J >= J_req
     c(2) = rhub - ri;              % r_i >= r_h
     ceq = [];
 end
+
+% Utility Function: Computes volume and moment of inertia per unit thickness (1 meter)
 function [V_prime, J_prime] = compute_unit_properties(ro, ri, Ws, params)
     rho  = params.rho;
     rs   = params.rs;
     rhub = params.rhub;
     
+    % X-section volume per unit thickness calculation
     V_prime = pi * (rhub^2 - rs^2) + pi * (ro^2 - ri^2) + 4 * Ws * (ri - rhub);
     
+    % Inertia per unit thickness calculation
     J_hub_prime   = 0.5 * rho * pi * (rhub^4 - rs^4);
     J_rim_prime   = 0.5 * rho * pi * (ro^4 - ri^4);
     m_spoke_prime = rho * Ws * (ri - rhub);
     J_spoke_prime = m_spoke_prime * ((1/3)*(ri^2 + rhub*ri + rhub^2) + (1/12)*Ws^2);
     
-    J_prime = J_hub_prime + J_rim_prime + 4 * J_spoke_prime;
+    J_prime = J_hub_prime + J_rim_prime + 4 * J_spoke_prime; 
 end
 
 %Function to store iteration history
 function stop = outfun(x, optimValues, state)
-    stop = false;
+    stop = false; % Keeps solver running
     global x_history;
     if strcmp(state, 'iter')
-        x_history = [x_history; x(1:2)]; % Store r_o and W_s at each step
+        x_history = [x_history; x(1:2)]; % Store outer radius and spoke width at each step
     end
 end

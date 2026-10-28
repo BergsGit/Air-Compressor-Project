@@ -1,15 +1,12 @@
-%HW002, Q2, Spoked Wheel problem
 clc
 clear
 
-%% Perform optimization
+%% Homework 2 begins
+target_J = 0.1008;
+b = 0.0254;
+t_t = 0.0381;
 
-% Outline desired parameters
-target_J = 0.1008; % Rotational inertia calculated in initial project [kg*m^2]
-b = 0.0254;        % Belt thickness [m]
-t_t = 0.0381;      % Minimum radial thickness [m]
-
-% Define constants in a code structure
+% Define constants in a structure
 params.rho = 7150;                % Material density [kg/m^3]
 params.rs = 0.012;                % Shaft radius [m] (12 mm)
 params.rhub = 0.034;              % Hub outer radius [m] (34 mm)
@@ -21,7 +18,7 @@ params.t_t = t_t;                 % Radial thickness [m]
 ro_solid = (((2 * target_J)/(params.rho * pi * b)) + (params.rs^4))^(1/4); 
 mass_solid = (2 * target_J)/((ro_solid^2) + (params.rs^2));
 
-% Use optimiza
+% Call the optimization function
 flywheel_optimization(params);
 
 %% Optimization Function Definition
@@ -116,21 +113,20 @@ function flywheel_optimization(params)
     clabel(C1, h1, 'FontSize', 8, 'Color', 'k');
     
     % Constraint Boundaries
-    p_bnd1 = contour(RO*1000, WS*1000, t_req_grid*1000, [25.4 25.4], 'm', 'LineWidth', 1.5);
-    p_bnd2 = line([min(ro_grid)*1000, max(ro_grid)*1000], [10 10], 'Color', 'm', 'LineWidth', 1.5, 'LineStyle', '--');
+    p_bnd1 = contour(RO*1000, WS*1000, t_req_grid*1000, [25.4 25.4], 'm--', 'LineWidth', 1.5);
+    p_bnd2 = line([min(ro_grid)*1000, max(ro_grid)*1000], [10 10], 'Color', 'm', 'LineWidth', 1.5);
     
     % Mark Optimal Design Point
     p_opt = plot(ro_opt*1000, Ws_opt*1000, 'o', 'MarkerFaceColor', 'y', 'MarkerSize', 10);
     
     % Labels and Legend
-    title('Flywheel Volume Optimization Contour Plot', 'FontSize', 13, 'FontWeight', 'bold');
     xlabel('Outer Radius r_o (mm)', 'FontSize', 11, 'FontWeight', 'bold');
     ylabel('Spoke Width W_s (mm)', 'FontSize', 11, 'FontWeight', 'bold');
     grid on;
     axis tight;
     legend('Volume Contours', 'Path Iteration Steps', ...
-             'Initial Guess', 'Boundary: t = 1 in', ...
-             'Boundary: W_s \geq 10 mm', 'Optimal Design Point', ...
+             'Initial Guess', 'Boundary (t = 1 in)', ...
+             'Boundary( W_s \geq 10 mm)', 'Optimal Design Point', ...
             'Location', 'Northeast', 'FontSize', 9);
 end
 %% Helper Functions (Must receive 'params')
@@ -168,11 +164,14 @@ function [c, ceq] = nonlcon(x, params)
     c(2) = rhub - ri;              % r_i >= r_h
     ceq = [];
 end
+
+% Utility Function: Computes volume and moment of inertia per unit thickness (1 meter)
 function [V_prime, J_prime] = compute_unit_properties(ro, ri, Ws, params)
     rho  = params.rho;
     rs   = params.rs;
     rhub = params.rhub;
     
+    % X-s
     V_prime = pi * (rhub^2 - rs^2) + pi * (ro^2 - ri^2) + 4 * Ws * (ri - rhub);
     
     J_hub_prime   = 0.5 * rho * pi * (rhub^4 - rs^4);
@@ -185,9 +184,9 @@ end
 
 %Function to store iteration history
 function stop = outfun(x, optimValues, state)
-    stop = false;
+    stop = false; % Keeps solver running
     global x_history;
     if strcmp(state, 'iter')
-        x_history = [x_history; x(1:2)]; % Store r_o and W_s at each step
+        x_history = [x_history; x(1:2)]; % Store outer radius and spoke width at each step
     end
 end
