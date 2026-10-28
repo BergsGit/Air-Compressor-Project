@@ -1,15 +1,12 @@
-%HW002, Q2, Spoked Wheel problem
 clc
 clear
 
-%% Perform optimization
+%% Homework 2 begins
+target_J = 0.1008;
+b = 0.0254;
+t_t = 0.0381;
 
-% Outline desired parameters
-target_J = 0.1008; % Rotational inertia calculated in initial project [kg*m^2]
-b = 0.0254;        % Belt thickness [m]
-t_t = 0.0381;      % Minimum radial thickness [m]
-
-% Define constants in a code structure
+% Define constants in a structure
 params.rho = 7150;                % Material density [kg/m^3]
 params.rs = 0.012;                % Shaft radius [m] (12 mm)
 params.rhub = 0.034;              % Hub outer radius [m] (34 mm)
@@ -21,7 +18,7 @@ params.t_t = t_t;                 % Radial thickness [m]
 ro_solid = (((2 * target_J)/(params.rho * pi * b)) + (params.rs^4))^(1/4); 
 mass_solid = (2 * target_J)/((ro_solid^2) + (params.rs^2));
 
-% Use optimization function to solve for spoked wheel dimensions
+% Call the optimization function
 flywheel_optimization(params);
 
 %% Optimization Function Definition
@@ -38,7 +35,7 @@ function flywheel_optimization(params)
     min_Ws  = 0.010;    % Min feature size (10 mm)
     
     % Global array to store iteration history
-    global x_history; % Needs to be global so can access throughout
+    global x_history;
     
     % Initial guess (must be within lowerbound/upperbound)
     x0 = [0.1, 0.015, t_axial, t_rad];  
@@ -52,7 +49,7 @@ function flywheel_optimization(params)
     options = optimoptions('fmincon', 'Display', 'iter', 'Algorithm', 'sqp', ...
                            'OutputFcn', @outfun);
     
-    % Run fmincon and save output structure
+    % Run fmincon and capture output structure
     [x_opt, V_opt, exitflag, output] = fmincon(@(x) obj_volume(x, params), x0, [], [], [], [], ...
                              lowerbound, upperbound, @(x) nonlcon(x, params), options);
     
@@ -63,7 +60,7 @@ function flywheel_optimization(params)
     ri_opt    = ro_opt - t_rad_opt;
     mass_opt  = V_opt * rho;
     
-    % Display results
+    % Display results & Convergence metrics
     fprintf('OPTIMAL SPOKED FLYWHEEL DESIGN RESULTS\n');
     fprintf('Iterations:           %d\n', output.iterations);
     fprintf('Function Evaluations: %d\n', output.funcCount);
@@ -116,36 +113,33 @@ function flywheel_optimization(params)
     clabel(C1, h1, 'FontSize', 8, 'Color', 'k');
     
     % Constraint Boundaries
-    p_bnd1 = contour(RO*1000, WS*1000, t_req_grid*1000, [25.4 25.4], 'm', 'LineWidth', 1.5);
-    p_bnd2 = line([min(ro_grid)*1000, max(ro_grid)*1000], [10 10], 'Color', 'm', 'LineWidth', 1.5, 'LineStyle', '--');
+    p_bnd1 = contour(RO*1000, WS*1000, t_req_grid*1000, [25.4 25.4], 'm--', 'LineWidth', 1.5);
+    p_bnd2 = line([min(ro_grid)*1000, max(ro_grid)*1000], [10 10], 'Color', 'm', 'LineWidth', 1.5);
     
     % Mark Optimal Design Point
     p_opt = plot(ro_opt*1000, Ws_opt*1000, 'o', 'MarkerFaceColor', 'y', 'MarkerSize', 10);
     
     % Labels and Legend
-    title('Flywheel Volume Optimization Contour Plot', 'FontSize', 13, 'FontWeight', 'bold');
     xlabel('Outer Radius r_o (mm)', 'FontSize', 11, 'FontWeight', 'bold');
     ylabel('Spoke Width W_s (mm)', 'FontSize', 11, 'FontWeight', 'bold');
     grid on;
     axis tight;
     legend('Volume Contours', 'Path Iteration Steps', ...
-             'Initial Guess', 'Boundary: t = 1 in', ...
-             'Boundary: W_s \geq 10 mm', 'Optimal Design Point', ...
+             'Initial Guess', 'Boundary (t = 1 in)', ...
+             'Boundary( W_s \geq 10 mm)', 'Optimal Design Point', ...
             'Location', 'Northeast', 'FontSize', 9);
 end
 %% Helper Functions (Must receive 'params')
-
-% Volume function, calculates volume to be minimized
-% Want to minimize volume as this will minimize total mass
+%Volume function
 function V = obj_volume(x, params)
     r_o = x(1); Ws = x(2); t = x(3); t_rad = x(4);
-    r_i = r_o - t_rad; % Rim inner radius
+    r_i = r_o - t_rad;
     
-    V_hub    = pi * (params.rhub^2 - params.rs^2) * t; % Volume of hub
-    V_rim    = pi * (r_o^2 - r_i^2) * t; % Volume of rim
-    V_spokes = 4 * Ws * (r_i - params.rhub) * t; % Volume of spokes
+    V_hub    = pi * (params.rhub^2 - params.rs^2) * t; %volume of hub
+    V_rim    = pi * (r_o^2 - r_i^2) * t; %volume of rim
+    V_spokes = 4 * Ws * (r_i - params.rhub) * t; %volume of spokes
     
-    V = V_hub + V_rim + V_spokes; % Total volume
+    V = V_hub + V_rim + V_spokes; %total volume
 end
 function [c, ceq] = nonlcon(x, params)
     ro = x(1); Ws = x(2); t = x(3); t_rad = x(4);
@@ -185,7 +179,7 @@ function [V_prime, J_prime] = compute_unit_properties(ro, ri, Ws, params)
     J_prime = J_hub_prime + J_rim_prime + 4 * J_spoke_prime;
 end
 
-% Function to store iteration history
+%Function to store iteration history
 function stop = outfun(x, optimValues, state)
     stop = false;
     global x_history;

@@ -99,7 +99,6 @@ function flywheel_optimization(params)
     p_opt = plot(ro_opt*1000, b_opt*1000, 'o', 'MarkerFaceColor', 'y', 'MarkerSize', 10);
     
     % Formatting
-    title('Solid Flywheel Optimization with Fixed Thickness (b = 1")', 'FontSize', 12, 'FontWeight', 'bold');
     xlabel('Outer Radius r_o (mm)', 'FontSize', 11, 'FontWeight', 'bold');
     ylabel('Axial Thickness b (mm)', 'FontSize', 11, 'FontWeight', 'bold');
     grid on;
